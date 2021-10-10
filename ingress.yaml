@@ -1,0 +1,27 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forward-auth-ingress
+  namespace: traefik-auth
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    # cert-manager.io/cluster-issuer: lets-encrypt
+    # Traefik middleware must be configured, otherwise you are stuck in a redirect loop.
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-auth-forward-auth@kubernetescrd
+spec:
+  tls:
+    - secretName: traefik-forward-auth-tls
+      hosts:
+        - auth.example.com
+  rules:
+   - host: auth.example.com
+     http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: forward-auth
+              port:
+                number: 4181

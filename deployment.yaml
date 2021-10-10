@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: forward-auth
+  name: forward-auth
+  namespace: traefik-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forward-auth
+  template:
+    metadata:
+      labels:
+        app: forward-auth
+    spec:
+      containers:
+        - name: traefik-forward-auth
+          image: thomseddon/traefik-forward-auth:2
+          ports:
+            - containerPort: 4181
+              protocol: TCP
+          env:
+            - name: DEFAULT_PROVIDER
+              value: generic-oauth
+            - name: PROVIDERS_GENERIC_OAUTH_AUTH_URL
+              value: https://github.com/login/oauth/authorize
+            - name: PROVIDERS_GENERIC_OAUTH_TOKEN_URL
+              value: https://github.com/login/oauth/access_token
+            - name: PROVIDERS_GENERIC_OAUTH_USER_URL
+              value: https://api.github.com/user
+            - name: PROVIDERS_GENERIC_OAUTH_CLIENT_ID
+              value: 123456xxxxxxxxxxxxxxxx
+            - name: PROVIDERS_GENERIC_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: traefik-forward-auth-secrets
+                  key: PROVIDERS_GENERIC_OAUTH_CLIENT_SECRET
+            - name: SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: traefik-forward-auth-secrets
+                  key: SECRET
+            - name: COOKIE_DOMAIN
+              value: example.com
+            - name: AUTH_HOST
+              value: auth.example.com
+            - name: LOG_LEVEL
+              value: info
+            - name: INSECURE_COOKIE
+              value: "false"
+          livenessProbe:
+            tcpSocket:
+              port: 4181
+            initialDelaySeconds: 20
+            failureThreshold: 3
+            successThreshold: 1
+            periodSeconds: 10
+            timeoutSeconds: 2
